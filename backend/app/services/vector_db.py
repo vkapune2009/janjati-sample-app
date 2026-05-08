@@ -4,16 +4,24 @@ import io
 import pypdf
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), "vector_store")
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-logger.info("Loading HuggingFace embeddings model (this may take a few seconds)...")
-embeddings = HuggingFaceEmbeddings(model_name=MODEL_NAME)
+# Check if we are running on Render (with a HF_TOKEN) to save memory
+hf_token = os.getenv("HF_TOKEN")
+
+if hf_token:
+    logger.info("HF_TOKEN found. Using HuggingFace API for embeddings to save RAM...")
+    from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+    embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=hf_token, model_name=MODEL_NAME)
+else:
+    logger.info("Loading local HuggingFace embeddings model (requires lots of RAM)...")
+    from langchain_huggingface import HuggingFaceEmbeddings
+    embeddings = HuggingFaceEmbeddings(model_name=MODEL_NAME)
 logger.info("Embeddings model loaded successfully.")
 
 vector_store = None

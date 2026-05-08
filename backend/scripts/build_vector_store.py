@@ -8,7 +8,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.dirname(BASE_DIR)
 DATA_DIR = os.path.join(BACKEND_DIR, "knowledge_data")
 SAVE_DIR = os.path.join(BACKEND_DIR, "vector_store")
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 def load_knowledge_data():
     documents = []
@@ -50,7 +50,12 @@ def build_vector_store():
 
     print(f"Found {len(documents)} knowledge chunks from JSON files.")
     print("Loading HuggingFace Embeddings model...")
-    embeddings = HuggingFaceEmbeddings(model_name=MODEL_NAME)
+    hf_token = os.getenv("HF_TOKEN")
+    if hf_token:
+        from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+        embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=hf_token, model_name=MODEL_NAME)
+    else:
+        embeddings = HuggingFaceEmbeddings(model_name=MODEL_NAME)
     
     # Check if a LangChain vector store already exists from UI uploads
     if os.path.exists(SAVE_DIR) and os.path.exists(os.path.join(SAVE_DIR, "index.faiss")):
